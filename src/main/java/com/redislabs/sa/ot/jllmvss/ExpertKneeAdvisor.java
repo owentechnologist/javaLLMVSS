@@ -3,7 +3,6 @@ package com.redislabs.sa.ot.jllmvss;
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
-import org.apache.poi.ss.formula.eval.NotImplementedException;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.search.Document;
 import redis.clients.jedis.search.Query;
@@ -63,7 +62,7 @@ public class ExpertKneeAdvisor {
 
 
     void interactWithUser(){
-        String[] list = new String[]{"sitting","running","Iliotibial","swelling","kneecap","Arthritis","bursitis","Tendonitis","clicking","clunking","sedentary"};
+        String[] list = new String[]{"sitting","running","MCL","Iliotibial","swelling","kneecap","Arthritis","bursitis","Tendonitis","clicking","clunking","sedentary"};
         ArrayList<String> kneeIssueKeywords = new ArrayList(Arrays.asList(list));
         System.out.println("Please select (write) the corresponding number (digit) for one of the words matching your knee issue: \n" +
                 "and hit enter:  \n Here is the list with the numbers you should choose from:");
@@ -105,7 +104,7 @@ public class ExpertKneeAdvisor {
         String newPrompt = in.nextLine().trim();
         String response = model.generate(
                         PROMPTS.YOU_ARE_AN_EXPERT_IN_KNEE_ISSUES.apply(newPrompt).text());
-        System.out.println("$$$$$  NON-AUGMENTED-RESPONSE  $$$$$\n"+response);
+        System.out.println("\n\n$$$$$  NON-AUGMENTED-RESPONSE  $$$$$\n\n"+response+"\n\n");
     }
 
     String getResponses(String chosenKeyword){
@@ -134,7 +133,7 @@ public class ExpertKneeAdvisor {
 
     String getSearchResponseForChosenKeyword(String chosenKeyword,String chunkStrategy){
         Query q = new Query(chosenKeyword+" @chunkStrategy:{"+chunkStrategy+"*}").
-                summarizeFields(50,4," and furthermore ","text").
+                summarizeFields(35,4," and furthermore ","text").
                 limit(0,1).
                 dialect(2);
         // Execute the query
@@ -170,7 +169,7 @@ public class ExpertKneeAdvisor {
             model = OpenAiChatModel.builder()
                     .apiKey(APIKEYS.getDemoKey())//APIKEYS.getOPENAIKEY()
                     //.apiKey(APIKEYS.getOPENAIKEY())
-                    .maxTokens(40)
+                    .maxTokens(80)
                     .timeout(ofSeconds(60))
                     .build();
         }
