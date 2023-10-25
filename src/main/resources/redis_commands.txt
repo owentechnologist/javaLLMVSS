@@ -25,4 +25,5 @@ TOPK.LIST topk:popularPrompts
 
 FT.CREATE idx_llm_exchanges ON hash PREFIX 1 "llm:exchange:" SCHEMA userRating NUMERIC SORTABLE embedding VECTOR FLAT 6 DIM 768 DISTANCE_METRIC COSINE TYPE FLOAT32
 FT.search idx_llm_exchanges @userRating:[-inf,3]
+
 FT.search idx_llm_exchanges @userRating:[7,+inf]
