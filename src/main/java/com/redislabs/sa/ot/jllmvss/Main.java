@@ -16,7 +16,7 @@ public class Main {
     static TimeSeriesEventLogger eventLogger = new TimeSeriesEventLogger().
             setTSKeyNameForMyLog("Main:GetAResponseEvent").
             setCustomLabel("countingTokensUsed");
-
+    static TopKEntryLogger topKEntryLogger = new TopKEntryLogger();//use default topkKeyName
     /**
      * Optional args are additional to the other redis-based args and are needed in certain circumstances (if redis has a password)
      * Directional args tell the Main program what to do.
@@ -29,16 +29,17 @@ public class Main {
      * directional: -searchtool
      * directional: -localembedding
      * directional: -vectorsearch
+     * directional: -simplellmcache
+     * directional: -vsssemanticcache (NB: this is not implemented as of 2023-10-23)
      * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-h redis-12000.homelab.local -p 12000 -s password"
-     * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-testmemory true"
+     * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-testmemory"
+     * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-h redis-12000.homelab.local -p 12000 -s password -simplellmcache"
      * @param args
      */
     public static void main(String[] args)throws Throwable{
         ArrayList argsList = new ArrayList(Arrays.asList(args));
-        JedisPooled jedis = new JedisPooledGetter(args).getJedisPooled();
 
         if(argsList.contains("-testmemory")){
-            //we don't bother testing for true or false following the -testmemory flag
             System.out.println("special memory test bot...");
             try {
                 ServiceWithMemoryForEachUserExample.main(args);
@@ -51,23 +52,36 @@ public class Main {
         }else if(argsList.contains("-localembedding")){
             System.out.println("Local Embedding test ...");
             try{
-                EMBED_BIOGRAPHY_FIELD_AS_VECTOR.main(args);
+                EmbedBiographyFieldAsVector.main(args);
             }catch(Throwable x){x.printStackTrace();}
         }else if(argsList.contains("-vectorsearch")){
             System.out.println("Vector Search Example ...");
             try{
                 VectorSearchExample.main(args);
             }catch(Throwable x){x.printStackTrace();}
+        }else if(argsList.contains("-simplellmcache")){
+            System.out.println("Simple LLM Cached Responses Example ...");
+            try{
+                CachedLLMExchange.main(args);
+            }catch(Throwable x){x.printStackTrace();}
+        }else if(argsList.contains("-vsssemanticcache")){
+            System.out.println("VSS Semantic Cached Responses Example ...");
+            try{
+                VSSSemanticCachedLLMExchange.main(args);
+            }catch(Throwable x){x.printStackTrace();}
         }else{
+            //execute just this Main class's logic...
+            JedisPooled jedis = new JedisPooledGetter(args).getJedisPooled();
             Main main = new Main();
             eventLogger.setJedis(jedis).initTS();
+            topKEntryLogger.setJedis(jedis);
             System.out.println(main.getResponses());
         }
     }
 
     String getResponses() {
         ChatLanguageModel model = OpenAiChatModel.builder()
-                .apiKey(APIKEYS.OPENAI_DEMO_KEY)//System.getenv("OPENAI_API_KEY"))
+                .apiKey(APIKEYS.getDemoKey())//APIKEYS.getOPENAIKEY()
                 .maxTokens(30)
                 .timeout(ofSeconds(60))
                 .build();
@@ -78,6 +92,7 @@ public class Main {
         System.out.println("Provide a single word topic and hit enter:  ");
         String topic = in.nextLine();
         String response = "";
+        topKEntryLogger.addEntryToMyTopKKey("topic: "+topic+" action: "+action);
         if (action.equalsIgnoreCase("rhyme")) {
             response = "\n model response to " + topic + "  is:\n\n" +
                     model.generate(

@@ -9,15 +9,22 @@ The Main class accepts arguments that either run logic it holds that interacts w
 This code uses JedisPooled for the connection to Redis which allows all operations you might want - including the use of TimeSeries for accurate metrics and trend analysis as well as Probabilistic data structures such as CuckooFilters and TopK which allow for de-duping and lightweight-estimated counting/ranking.
 Some information on starting the program is given at the top of the Main class - it is also below: 
 
+     * Optional args are additional to the other redis-based args and are needed in certain circumstances (if redis has a password)
+     * Directional args tell the Main program what to do.
+     * Only one Directional Arg is expected to be called per execution of the Main program
      * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-h redis-12000.homelab.local -p 12000"
      * Expects -h host and -p port
      * optional: -s password
      * optional: -u username
-     * optional: -testmemory
-     * optional: -searchtool
-     * optional: -localembedding
-     * optional: -vectorsearch
+     * directional: -testmemory
+     * directional: -searchtool
+     * directional: -localembedding
+     * directional: -vectorsearch
+     * directional: -simplellmcache
+     * directional: -vsssemanticcache (NB: this is not implemented as of 2023-10-23)
      * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-h redis-12000.homelab.local -p 12000 -s password"
-     * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-testmemory true"
+     * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-testmemory"
+     * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-h redis-12000.homelab.local -p 12000 -s password -simplellmcache"
+
 
 

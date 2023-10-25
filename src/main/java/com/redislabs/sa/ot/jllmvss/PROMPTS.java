@@ -1,5 +1,4 @@
 package com.redislabs.sa.ot.jllmvss;
-import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
 
 public class PROMPTS {

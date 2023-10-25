@@ -48,7 +48,7 @@ public class RedisSearchToolExample {
         eventLogger.setJedis(jedis).initTS();
 
         Assistant assistant = AiServices.builder(Assistant.class)
-                .chatLanguageModel(OpenAiChatModel.withApiKey(APIKEYS.OPENAI_DEMO_KEY))
+                .chatLanguageModel(OpenAiChatModel.withApiKey(APIKEYS.getDemoKey()))
                 .tools(new Search().setJedis(jedis))
                 .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
                 .build();

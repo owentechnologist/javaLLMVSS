@@ -25,7 +25,7 @@ public class ServiceWithMemoryForEachUserExample {
         eventLogger.setJedis(new JedisPooledGetter(args).getJedisPooled()).initTS();
 
         Assistant assistant = AiServices.builder(Assistant.class)
-                .chatLanguageModel(OpenAiChatModel.withApiKey(APIKEYS.OPENAI_DEMO_KEY))
+                .chatLanguageModel(OpenAiChatModel.withApiKey(APIKEYS.getDemoKey()))
                 .chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(10))
                 .build();
         Scanner in = new Scanner(System.in);

@@ -45,7 +45,7 @@ public class TimeSeriesEventLogger {
     }
 
     public void addEventToMyTSKey(double val){
-        if(!isReadyForEvents){
+        if((!isReadyForEvents)&&(!jedis.exists(tsKeyName))){
             initTS();
         }
         jedis.tsAdd(tsKeyName,val);
