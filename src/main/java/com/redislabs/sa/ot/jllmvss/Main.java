@@ -30,6 +30,7 @@ public class Main {
      * directional: -localembedding
      * directional: -vectorsearch
      * directional: -simplellmcache
+     * directional: -expertkneeadvisor
      * directional: -vsssemanticcache (NB: this is not implemented as of 2023-10-23)
      * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-h redis-12000.homelab.local -p 12000 -s password"
      * Example:  mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-testmemory"
@@ -63,6 +64,11 @@ public class Main {
             System.out.println("Simple LLM Cached Responses Example ...");
             try{
                 CachedLLMExchange.main(args);
+            }catch(Throwable x){x.printStackTrace();}
+        }else if(argsList.contains("-expertkneeadvisor")){
+            System.out.println("Expert Knee Advisor Responses Example ...");
+            try{
+                ExpertKneeAdvisor.main(args);
             }catch(Throwable x){x.printStackTrace();}
         }else if(argsList.contains("-vsssemanticcache")){
             System.out.println("VSS Semantic Cached Responses Example ...");
