@@ -10,6 +10,10 @@ import java.util.Map;
 
 import static com.redislabs.sa.ot.jllmvss.ByteArrayHelper.longArrayToByteArray;
 
+/**
+ * To invoke this example use:
+ * mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-h redis-12000.homelab.local -p 12000 -s password -vectorsearch"
+ */
 public class VectorSearchExample {
     static TimeSeriesEventLogger eventLogger = new TimeSeriesEventLogger().
             setTSKeyNameForMyLog("VectorSearchExample:EmbeddingEvent").

@@ -8,15 +8,23 @@ import redis.clients.jedis.*;
 import redis.clients.jedis.search.Query;
 import redis.clients.jedis.search.SearchResult;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Note this example borrows heavily from:
  * https://github.com/langchain4j/langchain4j-examples/blob/main/other-examples/src/main/java/ServiceWithToolsExample.java
- *
+ * mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-h redis.mylocale.redisenterprise.cache.azure.net -p 10000 -s coolpassword -searchtool"
  **/
 public class RedisSearchToolExample {
     static TimeSeriesEventLogger eventLogger = new TimeSeriesEventLogger().
             setTSKeyNameForMyLog("RedisSearchToolExample:AssistantChatEvent").
-            setCustomLabel("countingTokensUsed");
+            setCustomLabel(TimeSeriesEventLogger.COUNTING_TOKENS_USED);
+    static TimeSeriesEventLogger durationLoggerRedis = new TimeSeriesEventLogger().
+            setTSKeyNameForMyLog("RedisSearchToolExample:RedisSearchEvent").
+            setCustomLabel(TimeSeriesEventLogger.DURATION_IN_MILLISECONDS);
+    static TimeSeriesEventLogger durationLoggerLLM = new TimeSeriesEventLogger().
+            setTSKeyNameForMyLog("RedisSearchToolExample:LLMUsageEvent").
+            setCustomLabel(TimeSeriesEventLogger.DURATION_IN_MILLISECONDS);
 
     static class Search {
         JedisPooled jedis = null;
@@ -24,11 +32,15 @@ public class RedisSearchToolExample {
 
         @Tool("provides the biography of a zoo animal once given species and knownDisorder as parameters")
         String fetchBiography(String species,String knownDisorder) {
+            long startTime = System.currentTimeMillis();
             Query q = new Query("@species:{"+species+"} @known_disorders:("+knownDisorder+")").returnFields("biography")
                     .limit(0, 1);
             SearchResult sr = jedis.ftSearch("idx_zoo", q);
             String reply = String.valueOf(sr.getDocuments().get(0));
             tokenCount =reply.length()/4;
+            System.out.println("\nIt took "+(System.currentTimeMillis()-startTime)+" milliseconds to get the information from Redis...");
+            durationLoggerRedis.addEventToMyTSKey((System.currentTimeMillis()-startTime));
+            System.out.println("\nThis is the information retrieved from Redis that the LLM will use to construct it's response:\n"+reply+"\n");
             return reply;
         }
 
@@ -46,18 +58,28 @@ public class RedisSearchToolExample {
     public static void main(String[] args) {
         JedisPooled jedis = new JedisPooledGetter(args).getJedisPooled();
         eventLogger.setJedis(jedis).initTS();
+        durationLoggerLLM.setJedis(jedis).initTS();
+        durationLoggerRedis.setJedis(jedis).initTS();
+
+        long startTime = System.currentTimeMillis();
 
         Assistant assistant = AiServices.builder(Assistant.class)
                 .chatLanguageModel(OpenAiChatModel.withApiKey(APIKEYS.getDemoKey()))
                 .tools(new Search().setJedis(jedis))
                 .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
                 .build();
-
-        String question = "What is the fullName and dietary preferences of the gorilla whose disorders are described as none?";
+        System.out.println("\nLLMAssistant created... took: "+(System.currentTimeMillis()-startTime)+" milliseconds");
+        durationLoggerLLM.addEventToMyTSKey((System.currentTimeMillis()-startTime));
+        String disorder = "Bite";
+        if(ThreadLocalRandom.current().nextInt(0,2) ==0){disorder="none";}
+        String question = "What is the fullName and dietary preferences of the gorilla whose disorders are described as "+disorder+"?";
         System.out.println("\nOur Assistant will use Redis to answer the following question: \n"+question+"\n");
         //Do the work of calling Redis and responding with a suitable and accurate answer:
+        System.out.println("\nCalling the LLM Assistant (which will use Redis Search to augment it's response...\n");
+        startTime=System.currentTimeMillis();
         String answer = assistant.chat(question);
+        durationLoggerLLM.addEventToMyTSKey((System.currentTimeMillis()-startTime));
         eventLogger.addEventToMyTSKey(Search.tokenCount);
-        System.out.println(answer);
+        System.out.println("\nThis is the LLM response:\n\n\t"+answer);
     }
 }

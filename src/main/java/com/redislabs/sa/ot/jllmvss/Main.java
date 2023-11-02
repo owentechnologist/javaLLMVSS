@@ -75,6 +75,16 @@ public class Main {
             try{
                 VSSSemanticCachedLLMExchange.main(args);
             }catch(Throwable x){x.printStackTrace();}
+        }else if(argsList.contains("-biographyexpert")){
+            System.out.println("Biography Expert RAG example ...");
+            try{
+                BiographyExpert.main(args);
+            }catch(Throwable x){x.printStackTrace();}
+        }else if(argsList.contains("-vsssemanticcachecomplete")){
+            System.out.println("Cached Results and Prompt matching example using embeddings...");
+            try{
+                VSSSemanticCachedLLMExchangeComplete.main(args);
+            }catch(Throwable x){x.printStackTrace();}
         }else{
             //execute just this Main class's logic...
             JedisPooled jedis = new JedisPooledGetter(args).getJedisPooled();

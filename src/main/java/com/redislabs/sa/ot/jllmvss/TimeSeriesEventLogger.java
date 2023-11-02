@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TimeSeriesEventLogger {
+
+    static final String COUNTING_TOKENS_USED = "countingTokensUsed";
+    static final String DURATION_IN_MILLISECONDS = "durationInMilliseconds";
     JedisPooled jedis = null;
     String tsKeyName = null;
     String customLabel = null; //countingTokensUsed,durationInMilliseconds

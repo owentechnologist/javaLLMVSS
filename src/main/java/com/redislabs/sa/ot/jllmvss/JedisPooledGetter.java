@@ -3,6 +3,7 @@ package com.redislabs.sa.ot.jllmvss;
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.Pipeline;
 
 import java.util.ArrayList;
 import java.util.Arrays;

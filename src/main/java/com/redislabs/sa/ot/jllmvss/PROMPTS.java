@@ -21,6 +21,8 @@ public class PROMPTS {
             PromptTemplate.from("You are a physical therapist who gives your advice on painful knee conditions. " +
                     "What can you say to this: {{it}}");
     public final static PromptTemplate YOU_COMPLETE_WHAT_YOU_START=
-            PromptTemplate.from("You are a knowledgeable and kind physical therapist who completes unfinished statements. Refine this statement: {{it}} ");
+            PromptTemplate.from("You are knowledgeable and kind and you complete unfinished statements. Refine this statement: {{it}} ");
+    public final static PromptTemplate YOU_ARE_AN_EXPERT_IN_BIOGRAPHIES= PromptTemplate.from("You are a biographer. Share your knowledge about {{it}}  If you do not know, say so.");
+    public final static PromptTemplate YOU_ARE_CURIOUS_ABOUT_BIOGRAPHIES= PromptTemplate.from("You are curious about individuals and their backgrounds. Submit a 16 word question starting with: Tell me about the individual who could be referred to using this information: {{it}}");
 
 }
