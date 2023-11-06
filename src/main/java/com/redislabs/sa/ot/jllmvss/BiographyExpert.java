@@ -18,7 +18,6 @@ import java.util.*;
 import static com.redislabs.sa.ot.jllmvss.ByteArrayHelper.longArrayToByteArray;
 import static java.time.Duration.ofSeconds;
 
-
 /**
  * This is an example of using RAG to augment the LLM responses so it focuses on a specific domain of knowledge
  * Of particular interest are the many techniques available to load the relevant data
@@ -27,8 +26,8 @@ import static java.time.Duration.ofSeconds;
  * You would start this program in this mode by executing:
  * mvn compile exec:java -Dexec.cleanupDaemonThreads=false -Dexec.args="-h redis-12000.homelab.local -p 12000 -s password -biographyexpert"
  *
- * Note that in many cases- separate calls to jedis would be better
- * wrapped in a single pipeline or transaction bounded call
+ * Note that in many cases- separate calls to jedis would be better executed in a pipeline or
+ * wrapped in a single transaction-bounded call
  * NB: it is expected that you create 2 Search indexes like this:
  * FT.CREATE idx_llm_exchanges ON hash PREFIX 1 "llm:exchange:" SCHEMA userRating NUMERIC SORTABLE chunkStrategy TAG embedding VECTOR FLAT 6 DIM 768 DISTANCE_METRIC COSINE TYPE FLOAT32
  * and this:
