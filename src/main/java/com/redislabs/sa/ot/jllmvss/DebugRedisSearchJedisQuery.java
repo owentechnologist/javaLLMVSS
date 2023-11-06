@@ -11,16 +11,23 @@ public class DebugRedisSearchJedisQuery {
     String debugParametersString = "";
     String debugLimitString = "";
     String debugFilterString = "";
+    String debugDialectString = "";
     int paramAddedCounter=0;
     String[][] paramsAndValues = new String[20][20];//unlikely we will need more than 20 params
 
     public String toString(){
-        return this.debugQueryString+debugFilterString+buildParametersString()+debugReturnFields+debugLimitString;
+        return this.debugQueryString+debugFilterString+buildParametersString()+debugReturnFields+debugLimitString+debugDialectString;
     }
 
     public Query limit(Integer offset, Integer limit) {
-        this.debugLimitString = " LIMIT "+offset+" "+limit;
+        this.debugLimitString = " LIMIT "+offset+" "+limit+" ";
         q.limit(offset, limit);
+        return q;
+    }
+
+    public Query dialect(Integer dialect) {
+        this.debugDialectString = " DIALECT "+dialect+" ";
+        q.dialect(dialect);
         return q;
     }
 
