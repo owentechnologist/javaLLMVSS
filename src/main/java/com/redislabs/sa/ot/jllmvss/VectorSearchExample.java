@@ -29,28 +29,28 @@ public class VectorSearchExample {
 
         long startTime = System.currentTimeMillis(); // not including connection setup time
         //create the sentence to compare to the searchable embeddings:
-        String searchText = "The trip taken was through India for this popular animal";
+        String searchText = "India is the home of this animal";
         System.out.println("\nSEARCH RESULT from comparing this sentence:\n\t"+searchText);
         long beforeTime = System.currentTimeMillis();
         executeVSSQuery(searchText,jedis);
         durationLogger.addEventToMyTSKey(System.currentTimeMillis()-beforeTime);
         eventLogger.addEventToMyTSKey(searchText.length()/4);
 
-        searchText = "Something about a hat trick";
+        searchText = "A tricky and funny beast";
         System.out.println("\nSEARCH RESULT from comparing this sentence:\n\t"+searchText);
         beforeTime = System.currentTimeMillis();
         executeVSSQuery(searchText,jedis);
         durationLogger.addEventToMyTSKey(System.currentTimeMillis()-beforeTime);
         eventLogger.addEventToMyTSKey(searchText.length()/4);
 
-        searchText = "Dangerous - do not approach";
+        searchText = "A Dangerous animal that you do not approach";
         System.out.println("\nSEARCH RESULT from comparing this sentence:\n\t"+searchText);
         beforeTime = System.currentTimeMillis();
         executeVSSQuery(searchText,jedis);
         durationLogger.addEventToMyTSKey(System.currentTimeMillis()-beforeTime);
         eventLogger.addEventToMyTSKey(searchText.length()/4);
 
-        searchText = "The Gorilla that wasn't feeling well.";
+        searchText = "I have an injury";
         System.out.println("\nSEARCH RESULT from comparing this sentence:\n\t"+searchText);
         beforeTime = System.currentTimeMillis();
         executeVSSQuery(searchText,jedis);
@@ -65,11 +65,11 @@ public class VectorSearchExample {
         Map<String, String> options = Map.of("maxLength", "768",  "modelMaxLength", "768");
         HuggingFaceTokenizer sentenceTokenizer = HuggingFaceTokenizer.newInstance("sentence-transformers/all-mpnet-base-v2", options);
         int K = 3;
-        Query q = new Query("*=>[KNN $K @embedding $BLOB AS score]").
-                setSortBy("score",false).
+        Query q = new Query("*=>[KNN $K @embedding $textEmbedding AS vss_score]").
+                setSortBy("vss_score",false).
                 returnFields("biography", "score").
                 addParam("K", K).
-                addParam("BLOB", longArrayToByteArray(sentenceTokenizer.encode(searchText).getIds())).
+                addParam("textEmbedding", longArrayToByteArray(sentenceTokenizer.encode(searchText).getIds())).
                 limit(0,1).
                 dialect(2);
 

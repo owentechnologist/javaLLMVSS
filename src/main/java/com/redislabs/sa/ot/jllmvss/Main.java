@@ -50,10 +50,10 @@ public class Main {
             try{
                 RedisSearchToolExample.main(args);
             }catch(Throwable x){x.printStackTrace();}
-        }else if(argsList.contains("-localembedding")){
-            System.out.println("Local Embedding test ...");
+        }else if(argsList.contains("-textembedding")){
+            System.out.println("Text Embedding test ...");
             try{
-                EmbedBiographyFieldAsVector.main(args);
+                EmbedNamedRedisHashAttributeAsVector.main(args);
             }catch(Throwable x){x.printStackTrace();}
         }else if(argsList.contains("-vectorsearch")){
             System.out.println("Vector Search Example ...");
