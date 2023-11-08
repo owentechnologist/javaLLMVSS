@@ -1,0 +1,5 @@
+FT.CREATE idx_llm_exchanges ON hash PREFIX 1 "llm:exchange:" SCHEMA userRating NUMERIC SORTABLE chunkStrategy TAG embedding VECTOR FLAT 6 DIM 768 DISTANCE_METRIC COSINE TYPE FLOAT32
+
+FT.CREATE idx_knee_expert ON hash PREFIX 1 "llm:knee:data:" LANGUAGE ENGLISH SCHEMA chunkStrategy TAG userRating NUMERIC SORTABLE text TEXT
+
+FT.CREATE idx_biography_expert ON hash PREFIX 1 "llm:biography:data:" LANGUAGE ENGLISH SCHEMA chunkStrategy TAG text TEXT

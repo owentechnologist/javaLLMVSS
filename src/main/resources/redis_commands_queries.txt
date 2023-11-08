@@ -5,17 +5,10 @@ TS.MRANGE - + AGGREGATION avg 60000 FILTER customLabel=durationInMilliseconds
 
 TOPK.LIST topk:popularPrompts
 
-FT.CREATE idx_llm_exchanges ON hash PREFIX 1 "llm:exchange:" SCHEMA userRating NUMERIC SORTABLE chunkStrategy TAG embedding VECTOR FLAT 6 DIM 768 DISTANCE_METRIC COSINE TYPE FLOAT32
-
 FT.search idx_llm_exchanges @userRating:[-inf,4] nocontent
 
 FT.search idx_llm_exchanges @userRating:[7,+inf] return 1 response
 
-FT.CREATE idx_knee_expert ON hash PREFIX 1 "llm:knee:data:" LANGUAGE ENGLISH SCHEMA chunkStrategy TAG userRating NUMERIC SORTABLE text TEXT
-
 FT.SEARCH idx_knee_expert "Tendonitis @chunkStrategy:{none*}" LIMIT 0 1 SUMMARIZE FIELDS 1 text FRAGS 4 LEN 60 SEPARATOR " and furthermore " DIALECT 2
 
 TOPK.LIST topk:kneeIssueKeywords withcount
-
-FT.CREATE idx_biography_expert ON hash PREFIX 1 "llm:biography:data:" LANGUAGE ENGLISH SCHEMA chunkStrategy TAG text TEXT
-
