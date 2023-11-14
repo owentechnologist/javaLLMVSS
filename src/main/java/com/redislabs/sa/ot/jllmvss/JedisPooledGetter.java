@@ -44,6 +44,7 @@ public class JedisPooledGetter {
         } else {
             jedisConfig = DefaultJedisClientConfig.builder().build();
         }
+
         this.jedis = new JedisPooled(hnp, jedisConfig);
         System.out.println("\n\t\tTIME in MILLISECONDS TAKEN TO CREATE REDIS CONNECTION - "+(System.currentTimeMillis()-startTime));
     }

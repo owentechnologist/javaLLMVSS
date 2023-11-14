@@ -17,7 +17,7 @@ import static com.redislabs.sa.ot.jllmvss.ByteArrayHelper.longArrayToByteArray;
 import static java.time.Duration.ofSeconds;
 
 //TODO: ensure appropriate search index exists (create it, or throw exception if not)
-//TODO: implement query logic FT.SEARCH (see VectorSearchExample.java for reference)
+//DONE: implemented query logic to ensure low user-scored results are filtered out @userRating:[4 +inf]
 //TODO: remember to create a Search index similar to this: (run the command from redis-cli)
 //TODO: FT.CREATE idx_llm_exchanges ON hash PREFIX 1 "llm:exchange:" LANGUAGE ENGLISH SCHEMA userRating NUMERIC SORTABLE embedding VECTOR FLAT 6 DIM 768 DISTANCE_METRIC L2 TYPE FLOAT32
 
@@ -83,10 +83,11 @@ public class VSSSemanticCachedLLMExchangeComplete {
         System.out.println("My LLM model is - " + getLLMModel());
         System.out.println("Write one of these words: 'rhyme' or 'joke' or 'why' and hit enter:  ");
         String action = in.nextLine();
-        System.out.println("Provide a single word topic and hit enter:  ");
+        System.out.println("Provide a single word, or very short topic \nExample: dogs tail wagging\n and hit enter:  ");
         String topic = in.nextLine();
         PromptAndResponse promptAndResponse = null;
-        topKEntryLogger.addEntryToMyTopKKey("topic: "+topic+" action: "+action);
+        String promptSummary = "topic: "+topic+" action: "+action;
+        topKEntryLogger.addEntryToMyTopKKey(promptSummary);
 
         long endTime = 0l;
         boolean skipCache = false;
@@ -98,7 +99,7 @@ public class VSSSemanticCachedLLMExchangeComplete {
         }
         long startTime=System.currentTimeMillis();
 
-        if(skipCache||(!satisfiedByCache(topic,action))){
+        if(skipCache||(!satisfiedByCache(promptSummary))){
             startTime = System.currentTimeMillis();
             // we don't like the cache so use LLM:
             promptAndResponse = getLLMPromptAndResponse(topic,action);
@@ -116,8 +117,9 @@ public class VSSSemanticCachedLLMExchangeComplete {
             pipeline.hset(cachedLLMExchangeKeyName,"lastRecordedPrompt", promptAndResponse.prompt);
             pipeline.hset(cachedLLMExchangeKeyName,"response", promptAndResponse.response);
             pipeline.hincrBy(cachedLLMExchangeKeyName,"userRating",rating);
-            //TODO: add embedding for the prompt that generated the response to the cached response object:
-            pipeline.hset(cachedLLMExchangeKeyName.getBytes(), "embedding".getBytes(), createEmbedding(promptAndResponse.prompt));
+            //FIXME: add embedding for the prompt that generated the response to the cached response object:
+            //This has been updated to utilize the prompt summary instead of the actual prompt in the hopes that it works
+            pipeline.hset(cachedLLMExchangeKeyName.getBytes(), "embedding".getBytes(), createEmbedding(promptSummary));
             pipeline.sync();
         }else{ // we used the VSS cache to get our response
             endTime=System.currentTimeMillis();
@@ -128,15 +130,13 @@ public class VSSSemanticCachedLLMExchangeComplete {
 
     //: -- perform a search query for semantic matches
     // to the prompt previously used on the 'topic' and 'action'
-    boolean satisfiedByCache(String topic,String action){
+    boolean satisfiedByCache(String promptSummary){
         boolean isSatisfiedByCache = false;
         String response = "Nothing cached - Need to call LLM...\n";
-        //here is where we build the comparable prompt:
-        String promptForSearchingAgainst = getLLMPrompt(topic,action);
         //It may be useful to create a sentence that reflects a representation of the underlying request being made:
         if(!jedis.ftInfo(SEARCH_INDEX_NAME).isEmpty()){
             long startTime = System.currentTimeMillis();
-            response = executeVSSQuery(SEARCH_INDEX_NAME,promptForSearchingAgainst);
+            response = executeVSSQuery(SEARCH_INDEX_NAME,promptSummary);
             vssDurationLogger.addEventToMyTSKey((System.currentTimeMillis()-startTime));
             isSatisfiedByCache=true;
             System.out.println("\n************** RESPONSE ********************\n");
@@ -215,7 +215,7 @@ public class VSSSemanticCachedLLMExchangeComplete {
                 dialect(2);
          */
         Query q=queryDebugger.startQuery(
-                "*=>[KNN $K @embedding $BLOB AS vss_score]");
+                "@userRating:[4 +inf]=>[KNN $K @embedding $BLOB AS vss_score]");
         q=queryDebugger.setSortBy("vss_score",true); // with cosine a low score is the best matching result
         q=queryDebugger.returnFields("response", "vss_score", "userRating","lastRecordedPrompt"); //what will come back to us from Redis?
         q=queryDebugger.addParam("K", K);
