@@ -59,10 +59,16 @@ public class VSSSemanticCachedLLMExchangeComplete {
         VSSSemanticCachedLLMExchangeComplete vssSemanticCachedLLMExchange = new VSSSemanticCachedLLMExchangeComplete();
         String userResponse = "";
         while(!userResponse.equalsIgnoreCase("end")){
+            if(userResponse.equalsIgnoreCase("list")){
+                System.out.println("Here are the top 5 user selected topics and requested actions: ");
+                topKEntryLogger.getTopKlistWithCount(true);
+                System.out.println("\n");
+            }
             vssSemanticCachedLLMExchange.displayAndUpdateResponse();
             System.out.println("{{{{{{   USER OPTION   }}}}}}\n\t" +
-                    "To end this program type: 'end' and hit enter, " +
-                    "to get another LLM response, just hit enter...  ");
+                    "To end this program type: 'end' and hit enter, \n" +
+                    "To see what others have asked for type: 'list' and hit enter, \n"+
+                    "To ask for another LLM response, just hit enter...  ");
             userResponse = in.nextLine();
         }
         System.out.println("\n\n\tEnding program...");
@@ -78,6 +84,8 @@ public class VSSSemanticCachedLLMExchangeComplete {
         }
         return model;
     }
+
+
 
     void displayAndUpdateResponse(){
         System.out.println("My LLM model is - " + getLLMModel());
