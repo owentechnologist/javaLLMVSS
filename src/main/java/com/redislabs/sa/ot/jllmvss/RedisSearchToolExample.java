@@ -1,4 +1,6 @@
 package com.redislabs.sa.ot.jllmvss;
+
+import java.util.Scanner;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -7,8 +9,6 @@ import dev.langchain4j.service.AiServices;
 import redis.clients.jedis.*;
 import redis.clients.jedis.search.Query;
 import redis.clients.jedis.search.SearchResult;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Note this example borrows heavily from:
@@ -71,8 +71,13 @@ public class RedisSearchToolExample {
         System.out.println("\nLLMAssistant created... took: "+(System.currentTimeMillis()-startTime)+" milliseconds");
         durationLoggerLLM.addEventToMyTSKey((System.currentTimeMillis()-startTime));
         String disorder = "Bite";
-        if(ThreadLocalRandom.current().nextInt(0,2) ==0){disorder="none";}
-        String question = "What is the fullName and dietary preferences of the gorilla whose disorders are described as "+disorder+"?";
+        Scanner in = new Scanner(System.in);
+        System.out.println("What animal disorder are you looking to match against eg: Bite  : ");
+        disorder=in.nextLine().trim();
+        String species = "Gorilla";
+        System.out.println("What animal species are you looking to match against eg: Gorilla  : ");
+        species=in.nextLine().trim();
+        String question = "What is the fullName and dietary preferences of the "+species+" whose disorders are described as "+disorder+"?";
         System.out.println("\nOur Assistant will use Redis to answer the following question: \n"+question+"\n");
         //Do the work of calling Redis and responding with a suitable and accurate answer:
         System.out.println("\nCalling the LLM Assistant (which will use Redis Search to augment it's response...\n");

@@ -47,7 +47,7 @@ public class BiographyExpert {
     static Scanner in = new Scanner(System.in);
     static final String BIOGRAPHY_EXPERT_SEARCH_INDEX_NAME = "idx_biography_expert";
     static final String BIOGRAPHY_EXPERT_SEARCH_KEY_PREFIX = "llm:biography:data:";
-    static final String BIOGRAPHY_SEARCH_RESULT_FIELD = "biographyText";
+    static final String BIOGRAPHY_SEARCH_RESULT_FIELD = "biographyText"; // makes sure this matches index definition!
     static final String LLM_EXCHANGES_SEARCH_INDEX_NAME = "idx_llm_exchanges";
     static final String LLM_EXCHANGES_SEARCH_KEY_PREFIX = "llm:exchange:";
     static final String LLM_EXCHANGES_SEARCH_RESULT_FIELD = "response";
@@ -96,10 +96,15 @@ public class BiographyExpert {
         topKEntryLogger.addEntryToMyTopKKey("biographyKeyword: "+secondBiographyKeyword);
         long startTime = System.currentTimeMillis();
         long endTime = 0l;
-        String allKeywords = chosenKeyword+" or "+secondBiographyKeyword;
-        String searchFullText = chosenKeyword+" | "+secondBiographyKeyword;
+        String allKeywords = chosenKeyword+" and "+secondBiographyKeyword;
+        //Use FT search to fetch the matching hash key containing matching text (not vector search)
+        String searchFullText = chosenKeyword+" "+secondBiographyKeyword;
+        //Prepare the LLm prompt (used for both the Retrieval-enhanced and non-enhanced queries)
         String prompt = PROMPTS.YOU_ARE_CURIOUS_ABOUT_BIOGRAPHIES.apply(allKeywords).text();
+        System.out.println("$$$\n\tIn interactWithUser() ... Prompt for LLM is now: \n"+prompt+"\n$$$");
+        //break out the first portion of the prompt that does not include retrived data:
         String promptToEmbed = prompt.split("with:")[1];
+        System.out.println("PromptToEmbed for Vector Search (cached prompt/reponses) is now: "+promptToEmbed);
 
         //first try to match a cached prompt using embedding and VSS search:
         if(!satisfiedBySemanticCache(promptToEmbed)) {
@@ -118,6 +123,7 @@ public class BiographyExpert {
             String cachedLLMExchangeKeyName = LLM_EXCHANGES_SEARCH_KEY_PREFIX + chosenKeyword + ":" + secondBiographyKeyword;
             Pipeline jedisPipeline = jedis.pipelined();
             jedisPipeline.hset(cachedLLMExchangeKeyName, LLM_EXCHANGES_SEARCH_RESULT_FIELD, response);//NB: opportunity to use separate String key for response
+            // possible way to rate responses is to allow wvery user rating to accumulate / modify the score
             jedisPipeline.hincrBy(cachedLLMExchangeKeyName, "userRating", rating);
             jedisPipeline.hset(cachedLLMExchangeKeyName,"promptEmbeddingOriginalText",promptToEmbed);
             //add embedding for the PROMPT that generated the response to the cached response object:
@@ -127,7 +133,31 @@ public class BiographyExpert {
         System.out.println("\n<<< latency report >>>\n" +
                 "Retrieving response took "+(endTime-startTime)+" milliseconds\n");
         testNonAugmentedResponse(promptToEmbed);
+        System.out.println("Hit enter to attempt Retrieval Augmented LLM query...\n");
+        System.out.println("\nExecuting RAG-style LLM query...\n");
+        cacheIfGoodLLMResponse(getResponses(searchFullText),chosenKeyword,secondBiographyKeyword,promptToEmbed);
     }
+
+    void cacheIfGoodLLMResponse(String llmResponse,String firstBiographyKeyword,String secondBiographyKeyword,String promptToEmbed){
+        System.out.println(llmResponse);
+        System.out.println("\nPlease rate the last response given above ^  with 1 being good and -1 being not good." +
+                " \n(Enter 1 or -1 then hit enter):  ");
+        int rating = Integer.parseInt(in.nextLine().trim());
+        //add response to cache in Redis:
+        //(uses Hash datatype to allow for additional fields and search indexing)
+        if((llmResponse.length()>1)&&rating>0) { //you may prefer to cache the non-responses too to allow human fix to data
+            String cachedLLMExchangeKeyName = LLM_EXCHANGES_SEARCH_KEY_PREFIX + firstBiographyKeyword + ":" + secondBiographyKeyword;
+            Pipeline jedisPipeline = jedis.pipelined();
+            jedisPipeline.hset(cachedLLMExchangeKeyName, LLM_EXCHANGES_SEARCH_RESULT_FIELD, llmResponse);//NB: opportunity to use separate String key for response
+            // possible way to rate responses is to allow wvery user rating to accumulate / modify the score
+            jedisPipeline.hincrBy(cachedLLMExchangeKeyName, "userRating", rating);
+            jedisPipeline.hset(cachedLLMExchangeKeyName,"promptEmbeddingOriginalText",promptToEmbed);
+            //add embedding for the PROMPT that generated the response to the cached response object:
+            jedisPipeline.hset((cachedLLMExchangeKeyName).getBytes(), "embedding".getBytes(), createEmbedding(promptToEmbed));
+            jedisPipeline.sync();
+        }
+    }
+
 
     void testNonAugmentedResponse(String promptToEmbed) {
         System.out.println("\n As a test of the value of the augmented generation, " +
@@ -182,7 +212,7 @@ public class BiographyExpert {
                 response=bestMatch;
             }
         }
-        System.out.println("\n************** RESPONSE ********************\n");
+        System.out.println("\n************** LLM EXCHANGES Cached REQUEST / RESPONSE ********************\n");
         System.out.println(response+"\n");
         return isSatisfiedByCache;
     }
@@ -191,7 +221,7 @@ public class BiographyExpert {
         System.out.println("Building prompt by searching for : \n"+searchTerms);
         long startTime = System.currentTimeMillis();
         String response = "";
-        String retrievedText = getSearchResponseForChosenSearchTerms(searchTerms,ChunkStrategies.FULL_TEXT_SUMMARY);
+        String retrievedText = getSearchResponseForChosenSearchTerms(searchTerms);
         System.out.println("\nSource text retrieved by keyword is: "+retrievedText);
         String question =
                 model.generate(
@@ -214,13 +244,16 @@ public class BiographyExpert {
     }
 
     //Use standard Search to retrieve the text which will be used to generate the augmented response
-    String getSearchResponseForChosenSearchTerms(String searchTerms, String chunkStrategy){
+    String getSearchResponseForChosenSearchTerms(String searchTerms){
+        System.out.println("inside... getSearchResponseForChosenSearchTerms("+searchTerms+")");
+        System.out.println("Exeuting:  FT.SEARCH "+BIOGRAPHY_EXPERT_SEARCH_INDEX_NAME+" @"+BIOGRAPHY_SEARCH_RESULT_FIELD+":("+searchTerms+")");
         String result = "  Correction: No Match for those Terms - try again";
-        Query q = new Query("@"+BIOGRAPHY_SEARCH_RESULT_FIELD+":("+searchTerms+")"+" @chunkStrategy:{"+chunkStrategy+"}").
+        Query q = new Query("@"+BIOGRAPHY_SEARCH_RESULT_FIELD+":("+searchTerms+")").
                 limit(0,1).
                 dialect(2);
         // Execute the query:
         List<Document> docs = jedis.ftSearch(BIOGRAPHY_EXPERT_SEARCH_INDEX_NAME, q).getDocuments();
+        System.out.println("RESULT SET FROM FT.SEARCH has length of: "+docs.size());
         if(docs.size()>0){result =String.valueOf(docs.get(0).get(BIOGRAPHY_SEARCH_RESULT_FIELD))+" "+String.valueOf(docs.get(0).get("source"));}
         return result;
     }

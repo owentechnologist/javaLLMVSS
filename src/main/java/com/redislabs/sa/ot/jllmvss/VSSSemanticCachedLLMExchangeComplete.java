@@ -3,7 +3,6 @@ package com.redislabs.sa.ot.jllmvss;
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
-import org.apache.poi.ss.formula.eval.NotImplementedException;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.search.Document;
@@ -191,7 +190,7 @@ public class VSSSemanticCachedLLMExchangeComplete {
                     model.generate(
                             PROMPTS.YOU_ARE_A_TODDLER_BOT.apply(topic).text());
             prompt = PROMPTS.YOU_ARE_A_KIND_BOT_WHO_ANSWERS.apply(question).text();
-                    response = "question :"+question+"\n\n" +
+            response = "question :"+question+"\n\n" +
                     model.generate(prompt);
             eventLogger.addEventToMyTSKey((topic.length() / 4) + (question.length() / 4));
         }
@@ -223,7 +222,7 @@ public class VSSSemanticCachedLLMExchangeComplete {
                 dialect(2);
          */
         Query q=queryDebugger.startQuery(
-                "@userRating:[4 +inf]=>[KNN $K @embedding $BLOB AS vss_score]");
+                "@userRating:[5 +inf]=>[KNN $K @embedding $BLOB AS vss_score]");
         q=queryDebugger.setSortBy("vss_score",true); // with cosine a low score is the best matching result
         q=queryDebugger.returnFields("response", "vss_score", "userRating","lastRecordedPrompt"); //what will come back to us from Redis?
         q=queryDebugger.addParam("K", K);
@@ -239,7 +238,7 @@ public class VSSSemanticCachedLLMExchangeComplete {
             float score =Float.parseFloat(String.valueOf(docs.get(0).get("vss_score")));
             System.out.println("SCORE returned from VSS search was: "+score);
             //if(score < 80.25f){
-            if(score > 0.00025){
+            if(score > .24){//0.00025){
                 cachedResponseFoundBySearchingUsingVSS = "not found";
             }
             int userRating =5;
