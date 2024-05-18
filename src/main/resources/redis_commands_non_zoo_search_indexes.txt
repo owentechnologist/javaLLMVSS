@@ -3,3 +3,6 @@ FT.CREATE idx_llm_exchanges ON hash PREFIX 1 "llm:exchange:" SCHEMA userRating N
 FT.CREATE idx_knee_expert ON hash PREFIX 1 "llm:knee:data:" LANGUAGE ENGLISH SCHEMA chunkStrategy TAG userRating NUMERIC SORTABLE text TEXT
 
 FT.CREATE idx_biography_expert ON hash PREFIX 1 "llm:biography:data:" LANGUAGE ENGLISH SCHEMA chunkStrategy TAG biographyText TEXT
+
+FT.SYNUPDATE idx_biography_expert jakenames Jakob Jake Jakey Jakester Jakenheimer Jacob
+
